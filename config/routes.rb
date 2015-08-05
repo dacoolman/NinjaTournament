@@ -7,8 +7,14 @@ Rails.application.routes.draw do
 
   # Example of regular route:
     get 'tournaments' => 'tournaments#index'
+    get 'tournaments/undo' => 'tournaments#undo_singles'
+    get 'tournaments/create' => 'tournaments#create_tournament'
+    get 'tournaments/win' => 'tournaments#win_lose_singles'
+    get 'tournaments/win_doubles' => 'tournaments#win_lose_doubles'
+    get 'tournaments/undo_doubles' => 'tournaments#undo_doubles'
+    
     post 'tournaments/:id' => 'tournaments#submit_tournament'
-    get 'tournaments/:id' => 'tournaments#calculate_seeds'
+
   # Example of named route that can be invoked with purchase_url(id: product.id)
   #   get 'products/:id/purchase' => 'catalog#purchase', as: :purchase
 

@@ -1,5 +1,5 @@
 class TournamentsController < ApplicationController
-
+skip_before_filter :verify_authenticity_token
 def index
 
 end
@@ -743,7 +743,7 @@ def create_tournament
 # params[:participants_B] = ['II','JJ', 'KK', 'LL']
 # params[:Name] = 'MAB Classic'
 # params[:Game] = 'Ping Pong'
-# params[:Singles?] = 1
+params[:Singles?] = params[:Singles?].to_i
 Result.all.where(tournament: Tournament.find_by_name('MAB Classic')).destroy_all
 Participant.all.where(tournament: Tournament.find_by_name('MAB Classic')).destroy_all
 Tournament.all.where(name: 'MAB Classic').destroy_all

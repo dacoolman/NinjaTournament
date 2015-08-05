@@ -1,5 +1,5 @@
 class TournamentsController < ApplicationController
-
+	skip_before_filter :verify_authenticity_token
 def index
 
 end
@@ -14,12 +14,27 @@ else return false
 
 end
 
-def create_tests
+def create_tests_singles
 
 #create tournament
+existing_participants = ['','','','','','']
+participants = ['A', 'B', 'C', 'D', 'E', 'F']
+t_name = 'May Classic'
+t_game = 'Ping Pong'
+singles = 0
+
 
 end
 
+def create_tests_doubles
+existing_participants = ['','','','','','']
+participants = ['A', 'B', 'C', 'D', 'E', 'F']
+existing_participants_B = ['','','','','','']
+participants_B = ['AA', 'BB', 'CC', 'DD', 'EE', 'FF']
+t_name = 'May Classic'
+t_game = 'Ping Pong'
+singles = 1
+end
 
 private def notes
 User.create(name: 'A', singles_total_wins: 1, singles_total_losses: 0, singles_total_games: 1, singles_opponent_ratings: 1000, singles_rating: 1000, doubles_total_wins: 1, doubles_total_losses: 0, doubles_total_games: 1, doubles_opponent_ratings: 1000, doubles_rating: 1000)
@@ -55,15 +70,16 @@ user.save
 redirect_to '/tournaments'
 end
 
-private def calculate_seeds(tournament_id)
+def calculate_seeds(tournament_id)
 
 participants = Participant.all.where(tournament_id: tournament_id).count
 powers_2 = [1,2,4,8,16,32,64,128]
 count = 0
 	powers_2.each_with_index do |value, index|
-	if participants < value
 
-		count = index -1
+	if participants <= value
+
+		count = index
 		
 		break
 	end
@@ -99,6 +115,10 @@ def submit_tournament
 	end
 
 def win_lose_singles
+	params[:user_id] = 4
+	params[:prev] = 196
+	params[:next] = 199
+
 	winning_player = User.find(params[:user_id])
 
 	prev_result = Result.find(params[:prev])
@@ -339,10 +359,11 @@ end
 
 private def generate_results_single(tournament_id)
 
-participants = Participant.where(tournament: Tournament.find(tournament_id)).order(seed: :asc).includes(Player_1A, Player_2A)
+participants = Participant.all.where(tournament: Tournament.find(tournament_id)).order(seed: :asc).includes(:Player_A, :Player_B)
 seeds = calculate_seeds(tournament_id)
+
 t = Tournament.find(tournament_id)
-bye_opponent = User.find_by_name('Bye)')
+bye_opponent = User.find_by_name('Bye')
 for i in 0...seeds.length
 	for j in 0...seeds[i].length
 		tournament = t
@@ -350,37 +371,43 @@ for i in 0...seeds.length
 		high_seed = seeds[i][j][1]
 		round = i + 1
 		order = j + 1
-
+	
 		if i == 0
-		participant_1 = participants[low_seed].Player_A
-		if participants[high_seed] == nil
-			participant_2 = bye_opponent
-		else
-			participant_2 = participants[high_seed].Player_A
-		end
-		Result.create(tournament: tournament, round: round, Player_1A: participant_1, Player_2A: participant_2, order: order, Player_1A_rating: participant_1.singles_rating, Player_2A_rating: participant_2.singles_rating, low_seed: low_seed, high_seed: high_seed)
-	elsif i == 1
-		round1_Player1 = Result.where(tournament: tournament, round: 1, low_seed: low_seed).includes(:Player_1A).first
-		if round1_Player1.Player_2A == bye_opponent
-		bye_Player1 = true
-	else bye_Player1 = false
-		round1_Player2 = Result.where(tournament: tournament, round: 1, low_seed: high_seed).includes(:Player_2A).first
-end
-	if round1_Player2.Player_2A == bye_opponent
-		bye_Player2 = true
-	else bye_Player2 = false
-	end
-		if bye_Player1 && bye_Player2
-Result.create(tournament: tournament, round: round, Player_1A: round1_Player1.Player_1A, Player_2A: round1_Player2.Player_1A, order: order, Player_1A_rating: round1_Player1.Player_1A.singles_rating, Player_2A_rating: round1_Player2.Player_1A.singles_rating, low_seed: low_seed, high_seed: high_seed)
-		elsif bye_Player1
-Result.create(tournament: tournament, round: round, Player_1A: round1_Player1.Player_1A, order: order, Player_1A_rating: round1_Player1.Player_1A.singles_rating, low_seed: low_seed, high_seed: high_seed)
+			participant_1 = participants[low_seed-1].Player_A
+			if participants[high_seed-1] == nil
+				
+				participant_2 = bye_opponent
+			else
+				participant_2 = participants[high_seed-1].Player_A
+			end
+		# puts 'participant 1'
+		# puts participant_1.singles_rating
+		# puts 'participant 2'
+		# puts participant_2
+			Result.create(tournament: tournament, round: round, Player_1A: participant_1, Player_2A: participant_2, order: order, Player_1A_rating: participant_1.singles_rating, Player_2A_rating: participant_2.singles_rating, low_seed: low_seed, high_seed: high_seed)
+		elsif i == 1
+			round1_Player1 = Result.where(tournament: tournament, round: 1, low_seed: low_seed).includes(:Player_1A).first
+			round1_Player2 = Result.where(tournament: tournament, round: 1, low_seed: high_seed).includes(:Player_2A).first
+			if round1_Player1.Player_2A == bye_opponent
+				bye_Player1 = true
+			else bye_Player1 = false
+			end
 		
+			if round1_Player2.Player_2A == bye_opponent
+				bye_Player2 = true
+			else bye_Player2 = false
+			end
+			if bye_Player1 && bye_Player2
+				Result.create(tournament: tournament, round: round, Player_1A: round1_Player1.Player_1A, Player_2A: round1_Player2.Player_1A, order: order, Player_1A_rating: round1_Player1.Player_1A.singles_rating, Player_2A_rating: round1_Player2.Player_1A.singles_rating, low_seed: low_seed, high_seed: high_seed)
+			elsif bye_Player1
+				Result.create(tournament: tournament, round: round, Player_1A: round1_Player1.Player_1A, order: order, Player_1A_rating: round1_Player1.Player_1A.singles_rating, low_seed: low_seed, high_seed: high_seed)
+						
+			else
+				Result.create(tournament: tournament, round: round, order: order, low_seed: low_seed, high_seed: high_seed)
+			end
 		else
-Result.create(tournament: tournament, round: round, order: order, low_seed: low_seed, high_seed: high_seed)
-	end
-	else
-Result.create(tournament: tournament, round: round, order: order, low_seed: low_seed, high_seed: high_seed)
-	end
+			Result.create(tournament: tournament, round: round, order: order, low_seed: low_seed, high_seed: high_seed)
+		end
 
 
 	end
@@ -417,13 +444,14 @@ for i in 0...seeds.length
 		round1_Team1 = Result.where(tournament: tournament, round: 1, low_seed: low_seed).includes(:Player_1A, :Player_1B).first
 		round1_Player1A = round1_Team1.Player_1A
 		round1_Player1B = round1_Team1.Player_1B
+		round1_Player2A = round1_Team2.Player_1A
+		round1_Player2B = round1_Team2.Player_1B
 		if round1_Team1.Player_2A == bye_opponent
 		bye_Player1 = true
 	else bye_Player1 = false
 	end
 		round1_Team2 = Result.where(tournament: tournament, round: 1, low_seed: high_seed).includes(:Player_2A, :Player_2B).first
-		round1_Player2A = round1_Team2.Player_1A
-		round1_Player2B = round1_Team2.Player_1B
+
 
 
 	if round1_Team2.Player_2A == bye_opponent
@@ -448,67 +476,66 @@ end
 end
 
 
-def create_user_singles
-participants = params[:Name]
-existing_participants = params[:Existing_Name]
+private def create_users_singles(participants, existing_participants)
+
 participants.each_with_index do |participant, index|
 
-if !participant && !existing_participants[index]
+if participant == '' && existing_participants[index] = ''
 	flash[:response] = 'Enter valid name for all users'
 	redirect_to '/tournaments'
-elsif participant && existing_participants[index]
+elsif participant != '' && existing_participants[index] != ''
+	flash[:response] = 'Choose existing user or create new one'
+
+elsif existing_participants[index] != ''
+
+
+
+else
+
+	
+	u = User.create(name: participants[index], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000);
+
+	end
+
+
+
+	
+
+end
+end
+#
+private def create_users_doubles(participants, existing_participants, participants_B, existing_participants_B)
+
+participants.each_with_index do |participant, index|
+
+if (!participant && !existing_participants[index]) || (!participants_B && !existing_participants_B[index])
 	flash[:response] = 'Enter valid name for all users'
+	redirect_to '/tournaments'
+elsif (participant && existing_participants[index]) || (participants_B && existing_participants_B[index])
+	flash[:response] = 'Choose existing user or create new one'
+	redirect_to '/tournaments'
+elsif existing_participants[index] && existing_participants_B[index]
+
+elsif existing_participants[index]
+
+User.create(name: participants[index], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000)
 
 else
 
-	u = User.find_by_name(participant).exists?
-
-	if u
-		
 	
-	else
-		u = User.create(name: params[:Name], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000);
-	@response["response_#{u.id}"] = u
-	render :json => @response
-	end
+	User.create(name: participants_B[index], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000)
 
 	end
 
 
 
 	
-
 
 end
-
-def create_users_doubles
-if !params[:Name_A] || !params[:Name_B]
-@response["response_#{u.id}"] = 'Enter valid names'	
-else
-	u_A = User.find_by_name(params[:Name_A]).exists?
-	u_B = User.find_by_name(params[:Name_B]).exists?
-	@response = Hash.new
-	if u_A && u_B
-		@response["response_#{u.id}_A"] = 'User A exists'
-		@response["response_#{u.id}_B"] = 'User B exists'
-	elsif u_A
-		u_B = User.create(name: params[:Name_B], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000);
-		@response["response_#{u.id}_A"] = 'User A exists'
-		@response["response_#{u.id}_B"] = u_B
-	elsif u_B
-	u_A = User.create(name: params[:Name_A], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000);
-	
-	@response["response_#{u.id}_B"] = 'User B exists'
-		
-	else
-		u_A = User.create(name: params[:Name_A], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000);
-		u_B = User.create(name: params[:Name_B], singles_total_wins: 0, singles_total_losses: 0, singles_total_games: 0, singles_opponent_ratings: 0, singles_rating: 1000, doubles_total_wins: 0, doubles_total_losses: 0, doubles_total_games: 0, doubles_opponent_ratings: 0, doubles_rating: 1000);
-	@response["response_#{u.id}"] = 'Users created'
-	
-	end
-	render :json => @response
 end
-	end
+
+
+
 
 
 def destroy_user
@@ -517,42 +544,90 @@ u = User.find_by_name(params[:Name]).destroy
 
 def create_tournament
 
+# params[:existing_participants] = ['','','','','','']
+# params[:participants] = ['A', 'B', 'C', 'D', 'E', 'F']
+# params[:Name] = 'MAB Classic'
+# params[:Game] = 'Ping Pong'
+# params[:Singles?] = 1
+Result.all.where(tournament: Tournament.find_by_name('MAB Classic')).destroy_all
+Participant.all.where(tournament: Tournament.find_by_name('MAB Classic')).destroy_all
+Tournament.all.where(name: 'MAB Classic').destroy_all
 t = Tournament.create(name: params[:Name], game: params[:Game], singles?: params[:Singles?], finished: 0)
 if t.errors.any?
-	flash[:errors] = t.errors.full_messages
+	render json: {errors: "invalid entries"}
 else
 	participants = params[:participants]
+	
+
+	existing_participants = params[:existing_participants]
+
+	if params[:Singles?]
+
+		create_users_singles(participants, existing_participants)
+			for i in 0...existing_participants.length
+		if existing_participants[i] != ''
+			participants[i] = existing_participants[i]
+		end
+	end
+	else
 	participants_B = params[:participants_B]
+	existing_participants_B = params[:existing_participants_B]
+
+		create_users_doubles(participants, existing_participants, participants_B, existing_participants_B)
+
+			for i in 0..existing_participants.length
+		if existing_participants[i] != ''
+
+			participants[i] = existing_participants[i]
+		end
+	end
+			for i in 0..existing_participants_B.length
+			if existing_participants_B[i] != ''	
+				participants_B[i] = existing_participants_B[i]
+			end
+		end
+
+	end
+
 	ranked_users = []
 	counter = 1
-	if params[:singles?] && params[:game] != 'Ping Pong'
+	if params[:Singles?] && params[:Game] != 'Ping Pong'
+		
 		while participants.length > 0 do
 		rand_var = rand(0..participants.length-1)
 		Participant.create(tournament: Tournament.find(t.id), Player_A: User.find_by_name(participants[rand_var]), seed: counter)
 		participants.delete_at(rand_var)
 		counter += 1
 		end
-	elsif !params[:singles?] && params[:game] != 'Ping Pong'
+	elsif !params[:Singles?] && params[:Game] != 'Ping Pong'
+		
 		while participants.length > 0 do
 		rand_var = rand(0..participants.length-1)
 		Participant.create(tournament: Tournament.find(t.id), Player_A: User.find_by_name(participants[rand_var]), Player_B: User.find_by_name(participants_B[rand_var]), seed: counter)
 		participants.delete_at(rand_var)
 		counter += 1
 		end
-	elsif params[:singles?]
-		for i in 0...participants.length
+	elsif params[:Singles?]
+			
+		for i in 0..participants.length-1
+		
 			u = User.find_by_name(participants[i])
 			ranked_users.push([u.singles_rating, u])
 		end
 		sorted_users = ranked_users.sort_by{|r| r[0]}
-		
-		for i in 0...sorted_users.length
+		i = 0
+		while true do
 			the_seed = i + 1
-			if sorted_users[i + 1][0] != sorted_users[i + 1][0]
-			Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[i][1].id), seed: the_seed)
 
+			if i == sorted_users.length-1
+				Participant.create(tournament: t, Player_A: sorted_users[i][1], seed: the_seed)
+			
+			elsif sorted_users[i][0] != sorted_users[i + 1][0]
+				Participant.create(tournament: t, Player_A: sorted_users[i][1], seed: the_seed)
+			
 			else 
-
+						puts 'mabi'
+			puts i
 				same_values = [i]
 
 				for j in i+1...sorted_users.length
@@ -565,14 +640,18 @@ else
 				same_values_count = same_values.length
 				while same_values.length >0 do
 					rand_i = rand(0...same_values.length)
-					Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[same_values[rand_i]][1].id), seed: the_seed)
+					Participant.create(tournament: t, Player_A: sorted_users[same_values[rand_i]][1], seed: the_seed)
+					the_seed += 1
 					same_values.delete_at(rand_i)
 				end
 				i += same_values_count -1
 
 			end
+				i += 1
+			break if i >= sorted_users.length
 		end
 	else
+
 		for i in 0...participants.length
 			u_A = User.find_by_name(participants[i])
 			u_B = User.find_by_name(participants_B[i])
@@ -581,11 +660,12 @@ else
 		end
 		
 		sorted_users = ranked_users.sort_by{|r| r[0]}
-	
-		for i in 0...sorted_users.length
+		i = 0
+		while true do
+
 			the_seed = i + 1
 			if sorted_users[i + 1][0] != sorted_users[i + 1][0]
-				Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[i][1].id), Player_B: User.find(sorted_users[i][2].id),  seed: the_seed)
+				Participant.create(tournament: Tournament.find(t.id), Player_A: sorted_users[i][1], Player_B: sorted_users[i][2],  seed: the_seed)
 			else
 				same_values = [i]
 
@@ -598,23 +678,35 @@ else
 				same_values_count = same_values.length
 				while same_values.length >0 do
 					rand_i = rand(0...same_values.length)
-					Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[same_values[rand_i]][1].id), Player_B: User.find(sorted_users[i][2].id),  seed: the_seed)
+					Participant.create(tournament: Tournament.find(t.id), Player_A: sorted_users[same_values[rand_i]][1], Player_B: sorted_users[i][2],  seed: the_seed)
+					the_seed += 1
 					same_values.delete_at(rand_i)
 				end
 			i += same_values_count -1
 
 			end
+		 i += 1
+		 break if i >= sorted_users.length
 		end
 	end
 	
-	if t.singles? == 1
+	if t.singles?
+	
 		 generate_results_single(t.id)
 	else
 		 generate_results_double(t.id)	
+	
 	end
-
-
-			
+	# names = []
+	# results = Result.where(tournament_id: t.id).order(:round, :order).includes(:tournament, :Player_1A, :Player_2A)
+	# result = Result.where(tournament_id: t.id).joins(:Player_1A)
+	# result.each do |m|
+	# 	names << m.Player_1A.name
+	# end
+	results = Result.find_by_sql ["select distinct results.id as \"results_id\", results.round, results.low_seed, results.high_seed, results.\"Player_1A_id\", results.\"Player_1B_id\", results.\"Player_2A_id\", results.\"Player_2B_id\", results.\"winner_A_id\", results.\"winner_B_id\", results.order, results.\"Player_1A_rating\", results.\"Player_1B_rating\", results.\"Player_2A_rating\", results.\"Player_2B_rating\", player_1a.name as \"Player_1A_name\", player_1b.name as \"Player_1B_name\", player_2a.name as \"Player_2A_name\", player_2b.name as \"Player_2B_name\",  tournaments.name, tournaments.id, tournaments.game, tournaments.finished  FROM results inner join tournaments on results.tournament_id = tournaments.id left outer join (select users.id, users.name from users inner join results on results.\"Player_1A_id\" = users.id) as player_1a on results.\"Player_1A_id\" = player_1a.id left outer join (select users.id, users.name from users inner join results on results.\"Player_1B_id\" = users.id) as player_1b on results.\"Player_1B_id\" = player_1b.id left outer join (select users.id, users.name from users inner join results on results.\"Player_2A_id\" = users.id) as player_2a on results.\"Player_2A_id\" = player_2a.id left outer join (select users.id, users.name from users inner join results on results.\"Player_2B_id\" = users.id) as player_2b on results.\"Player_2B_id\" = player_2b.id where results.\"tournament_id\" = ? order by results.round, results.order", t.id]
+	count = results.count
+	render json: {results: results, count: count}
+	# render json: {valid: true}		
 end
 
 end
@@ -626,38 +718,118 @@ if t.errors.any?
 	flash[:errors] = t.errors.full_messages
 else
 	Participant.where(tournament: Tournament.find(params[:id])).destroy_all
+	Result.where(tournament: Tournament.find(params[:id])).destroy_all
 	participants = params[:participants]
+	
+
+	existing_participants = params[:existing_participants]
+
+	if params[:Singles?]
+
+		create_users_singles(participants, existing_participants)
+			for i in 0...existing_participants.length
+		if existing_participants[i] != ''
+			participants[i] = existing_participants[i]
+		end
+	end
+	else
+	participants_B = params[:participants_B]
+	existing_participants_B = params[:existing_participants_B]
+
+		create_users_doubles(participants, existing_participants, participants_B, existing_participants_B)
+
+			for i in 0..existing_participants.length
+		if existing_participants[i] != ''
+
+			participants[i] = existing_participants[i]
+		end
+	end
+			for i in 0..existing_participants_B.length
+			if existing_participants_B[i] != ''	
+				participants_B[i] = existing_participants_B[i]
+			end
+		end
+
+	end
+
 	ranked_users = []
 	counter = 1
-	if params[:singles?] && params[:game] != 'Ping Pong'
+	if params[:Singles?] && params[:Game] != 'Ping Pong'
+		
 		while participants.length > 0 do
-			rand_var = rand(0..participants.length-1)
-			Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(participants[rand_var]), seed: counter)
-			participants.delete_at(rand_var)
-			counter += 1
+		rand_var = rand(0..participants.length-1)
+		Participant.create(tournament: Tournament.find(t.id), Player_A: User.find_by_name(participants[rand_var]), seed: counter)
+		participants.delete_at(rand_var)
+		counter += 1
 		end
-	elsif !params[:singles?] && params[:game] != 'Ping Pong'
+	elsif !params[:Singles?] && params[:Game] != 'Ping Pong'
+		
 		while participants.length > 0 do
-			rand_var = rand(0..participants.length-1)
-			Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(participants[rand_var][0].id), Player_B: User.find(participants[rand_var][1].id), seed: counter)
-			participants.delete_at(rand_var)
-			counter += 1
+		rand_var = rand(0..participants.length-1)
+		Participant.create(tournament: Tournament.find(t.id), Player_A: User.find_by_name(participants[rand_var]), Player_B: User.find_by_name(participants_B[rand_var]), seed: counter)
+		participants.delete_at(rand_var)
+		counter += 1
 		end
-	elsif params[:singles?]
-	
+	elsif params[:Singles?]
+			
+		for i in 0..participants.length-1
+		
+			u = User.find_by_name(participants[i])
+			ranked_users.push([u.singles_rating, u])
+		end
+		sorted_users = ranked_users.sort_by{|r| r[0]}
+		i = 0
+		while true do
+			the_seed = i + 1
+
+			if i == sorted_users.length-1
+				Participant.create(tournament: t, Player_A: sorted_users[i][1], seed: the_seed)
+			
+			elsif sorted_users[i][0] != sorted_users[i + 1][0]
+				Participant.create(tournament: t, Player_A: sorted_users[i][1], seed: the_seed)
+			
+			else 
+						puts 'mabi'
+			puts i
+				same_values = [i]
+
+				for j in i+1...sorted_users.length
+				if sorted_users[j][0] == sorted_users[i][0]
+					same_values.push(j) 
+				else break
+				end
+				end
+
+				same_values_count = same_values.length
+				while same_values.length >0 do
+					rand_i = rand(0...same_values.length)
+					Participant.create(tournament: t, Player_A: sorted_users[same_values[rand_i]][1], seed: the_seed)
+					the_seed += 1
+					same_values.delete_at(rand_i)
+				end
+				i += same_values_count -1
+
+			end
+				i += 1
+			break if i >= sorted_users.length
+		end
+	else
+
 		for i in 0...participants.length
-		u = User.find_by_name(participants[i].name)
-		ranked_users.push([u.singles_rating, u])
+			u_A = User.find_by_name(participants[i])
+			u_B = User.find_by_name(participants_B[i])
+			avg_rating = (u_A.doubles_rating + u_B.doubles_rating)/2
+			ranked_users.push([avg_rating, u_A, u_B])
 		end
+		
+		sorted_users = ranked_users.sort_by{|r| r[0]}
+		i = 0
+		while true do
 
-	sorted_users = ranked_users.sort_by{|r| r[0]}
-
-		for i in 0...sorted_users.length
 			the_seed = i + 1
 			if sorted_users[i + 1][0] != sorted_users[i + 1][0]
-				Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[i][1].id), seed: the_seed)
-			else 
-
+				Participant.create(tournament: Tournament.find(t.id), Player_A: sorted_users[i][1], Player_B: sorted_users[i][2],  seed: the_seed)
+			else
 				same_values = [i]
 
 				for j in i+1...sorted_users.length
@@ -666,58 +838,31 @@ else
 					else break
 					end
 				end
-
 				same_values_count = same_values.length
 				while same_values.length >0 do
 					rand_i = rand(0...same_values.length)
-					Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[same_values[rand_i]][1].id), seed: the_seed)
+					Participant.create(tournament: Tournament.find(t.id), Player_A: sorted_users[same_values[rand_i]][1], Player_B: sorted_users[i][2],  seed: the_seed)
+					the_seed += 1
 					same_values.delete_at(rand_i)
 				end
 			i += same_values_count -1
-		
-			end
-		end
-	else
-		for i in 0...participants.length
-			u_A = User.find_by_name(participants[i][0].name)
-			u_B = User.find_by_name(participants[i][1].name)
-			avg_rating = (u_A.doubles_rating + u_B.doubles_rating)/2
-			ranked_users.push([avg_rating, u_A, u_B])
-		end
 
-		sorted_users = ranked_users.sort_by{|r| r[0]}
-
-		for i in 0...sorted_users.length
-			the_seed = i + 1
-			if sorted_users[i + 1][0] != sorted_users[i + 1][0]
-				Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[i][1].id), Player_B: User.find(sorted_users[i][2].id),  seed: the_seed)
-			else
-				same_values = [i]
-
-			for j in i+1...sorted_users.length
-				if sorted_users[j][0] == sorted_users[i][0]
-					same_values.push(j) 
-				else break
-				end
 			end
-
-			same_values_count = same_values.length
-			while same_values.length >0 do
-				rand_i = rand(0...same_values.length)
-				Participant.create(tournament: Tournament.find(t.id), Player_A: User.find(sorted_users[same_values[rand_i]][1].id), Player_B: User.find(sorted_users[i][2].id),  seed: the_seed)
-				same_values.delete_at(rand_i)
-			end
-			i += same_values_count -1
-			end
+		 i += 1
+		 break if i >= sorted_users.length
 		end
 	end
-
-	Result.where(tournament: Tournament.find(t.id)).destroy_all
-	if t.singles? == 1
-		generate_results_single(t.id)
+	
+	if t.singles?
+	
+		 generate_results_single(t.id)
 	else
-		generate_results_double(t.id)	
+		 generate_results_double(t.id)	
+	
 	end
+
+
+	redirect_to '/tournaments'	
 			
 end
 

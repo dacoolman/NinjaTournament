@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150729230605) do
+ActiveRecord::Schema.define(version: 20150806192352) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -43,6 +43,8 @@ ActiveRecord::Schema.define(version: 20150729230605) do
     t.integer  "Player_2B_rating"
     t.integer  "low_seed"
     t.integer  "high_seed"
+    t.integer  "Player_1_score"
+    t.integer  "Player_2_score"
   end
 
   add_index "results", ["tournament_id"], name: "index_results_on_tournament_id", using: :btree

@@ -7,14 +7,18 @@ Rails.application.routes.draw do
 
   # Example of regular route:
     get 'tournaments' => 'tournaments#index'
+    get 'tournaments/all' => 'tournaments#all' 
+
     get 'tournaments/undo' => 'tournaments#undo_singles'
     get 'tournaments/create' => 'tournaments#create_tournament'
     get 'tournaments/win' => 'tournaments#win_lose_singles'
     get 'tournaments/win_doubles' => 'tournaments#win_lose_doubles'
     get 'tournaments/undo_doubles' => 'tournaments#undo_doubles'
-    
+    get 'tournaments/update_score' => 'tournaments#update_score'
+    get 'tournaments/player/:id' => 'tournaments#player' 
+    get 'tournaments/:id' => 'tournaments#show' 
     post 'tournaments/:id' => 'tournaments#submit_tournament'
-    get 'tournaments/:id' => 'tournaments#calculate_seeds'
+
     post 'tournaments' => 'tournaments#create_tournament'
     post 'win' => 'tournaments#win_lose_singles'
 

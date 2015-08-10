@@ -53,4 +53,5 @@ group :test do
   gem 'capybara'
 end
 gem 'hirb'
+gem 'rails_12factor', group: :production
 

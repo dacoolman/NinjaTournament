@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   # root 'welcome#index'
 
   # Example of regular route:
+    root 'tournaments#index'
     get 'tournaments' => 'tournaments#index'
     get 'tournaments/all' => 'tournaments#all' 
 

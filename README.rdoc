@@ -1,28 +1,44 @@
 == README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+*About the app:
 
-Things you may want to cover:
+This is the back-end for the single elimination tournament app. It is an API that will return JSON back to the front end with information about the tournament.
 
-* Ruby version
+It has the following features:
 
-* System dependencies
+It will create either a singles or doubles tournament, although the front end only supports a singles tournament currently. It currently only supports rated games for Ping Pong, so all other options will generate seeds randomly and not update ratings after a win or loss, while Ping Pong tournaments will rank seeds based on their rating and update the rating based on a win or loss. The app uses a performance rating system to calculate their rating based on their total wins, total losses, total games played and total opponent ratings. Additionally if the undo button is pressed, rated games will have the player's stats reversed, while unrated games won't affect these stats. The last winner that was advanced will return to the round before.
 
-* Configuration
+Once a tournament is created, it will create any new user based on a unique name. If the name exists, that player will be chosen. All of these players will be added as participants for this tournament. Then the seeds of these players will be chosen based on their rating or will be randomized depending on the game selected. If multiple users in a rated game have the same rating, their order among each other is randomized.
+
+Byes will be awarded to the lowest seeds. The number distributed will be based on the next closest power of 2 minus final participants. Users awarded a bye will be advanced automatically to the next round.
+
+Determining which seed faces who uses an algorithm that checks that a seeded user always faces the number of users in that round minus that user's seed + 1.
+
+
+
+The backend will also validate results returned and return "Invalid move" if the move isn't possible.
+
+About the data returned:
+
+Since Ember can't access the active record like a pure Rails app can, I can't use a .includes query to have associated record information available in the front end. Instead I wrote a find by sql command to return the information for a single tournament that joined on the users table for each column that referenced it and gave it an alias to return the specific user information.
+
+*Important versions
+Ruby version: 2.2
+Rails version: 4.2.3
+
+
 
 * Database creation
 
+It is using a postgres database. 
+
 * Database initialization
 
-* How to run the test suite
+To start it, run postgres -D /usr/local/pgsql/data in a unix terminal. Then make sure the migrations run by running rake db:migrate in the terminal
 
-* Services (job queues, cache servers, search engines, etc.)
+
 
 * Deployment instructions
 
-* ...
+* After pulling the files, starting postgres and running rake db:migrate, run rails s in the directory in the terminal. Navigate to localhost:3000 and you should see a message saying the back end is running. Follow the instructions to start the Ember front end, then once it is deployed it should be able to interact with this end.
 
-
-Please feel free to use a different markup language if you do not plan to run
-<tt>rake doc:app</tt>.
